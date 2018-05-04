@@ -22,7 +22,7 @@ function findPools() {
         }
 
         for (let pool of data['pools']) {
-            if ('result' in pool) {
+            if ('result' in pool && !('explorer' in pool)) {
                 found = []
                 for (var height in to_find) {
                     if (height in pool['result']['blocks'] && pool['result']['blocks'][height] == to_find[height][0]) {
