@@ -1,40 +1,34 @@
 <h2 style="margin-bottom: 0px">
    Transaction pool
 </h2>
-<h4 style="font-size: 12px; margin-top: 0px">(no of txs: {{mempool_size}}, size: {{mempool_size_kB}} kB, updated every {{ mempool_refresh_time }} seconds)</h4>
+<h4 style="font-size: 12px; margin-top: 0px">(no of txs: <span id="mempool-size">{{mempool_size}}</span>,
+    size: <span id="mempool-size-kb">{{mempool_size_kB}}</span> kB)</h4>
 <div class="center">
     
-      <table class="center" style="width:80%">
+      <table class="center mempool">
             <tr>
-                <td>age [h:m:s]</td>
-                <td>transaction hash</td>
-                <td>fee</td>
-                <td>outputs</td>
-                <td>in(nonrct)/out</td>
-                <td>ring size</td>
-                <td>tx size [kB]</td>
+                <th class="age">age [h:m:s]</th>
+                <th class="hash">transaction hash</th>
+                <th class="fee">fee</th>
+                <th class="inout">in(nonrct)/out</th>
+                <th class="mixin">ring size</th>
+                <th class="size">tx size [kB]</th>
             </tr>
             {{#mempooltxs}}
-            <tr>
-                <td>{{age}}</td>
-                <td><a href="/tx/{{hash}}">{{hash}}</a></td>
-                <td>{{fee}}</td>
-                <td>{{xmr_outputs}}</td>
-                <td>{{no_inputs}}({{no_nonrct_inputs}})/{{no_outputs}}</td>
-                <td>{{mixin}}</td>
-                <td>{{txsize}}</td>
+            <tr class="tx-row">
+                <td class="age">{{age}}</td>
+                <td class="hash"><a href="/tx/{{hash}}">{{hash}}</a></td>
+                <td class="fee">{{fee}}</td>
+                <td class="inout">{{no_inputs}}({{no_nonrct_inputs}})/{{no_outputs}}</td>
+                <td class="mixin">{{mixin}}</td>
+                <td class="size">{{txsize}}</td>
             </tr>
             {{/mempooltxs}}
         </table>
 
-    {{^mempool_fits_on_front_page}}
-      {{#partial_mempool_shown}}
-      <div class="center" style="text-align: center; margin-bottom: 10px">
+      <div id="see_all_mempool" class="center" style="text-align: center; margin-bottom: 10px{{#mempool_fits_on_front_page}}; display: none{{/mempool_fits_on_front_page}}{{^partial_mempool_shown}}; display: none{{/partial_mempool_shown}}">
           <a href="/txpool">Only {{no_of_mempool_tx_of_frontpage}} txs shown. Click here to see all of them</a>
       </div>
-      {{/partial_mempool_shown}}
-
-    {{/mempool_fits_on_front_page}}
 
 
 </div>

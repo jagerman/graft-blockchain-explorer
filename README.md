@@ -4,7 +4,7 @@
 
 The key features of the Graft Blockchain Explorer are:
 
- - no javascript, no cookies, no web analytics trackers, no images,
+ - no cookies, no web analytics trackers, no images,
  - open sourced,
  - made fully in C++,
  - showing encrypted payments ID,

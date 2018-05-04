@@ -35,6 +35,7 @@
 #define TMPL_DIR                    "./templates"
 #define TMPL_PARIALS_DIR            TMPL_DIR "/partials"
 #define TMPL_CSS_STYLES             TMPL_DIR "/css/style.css"
+#define TMPL_BLOCKCHAIN_JS          TMPL_DIR "/blockchain.js"
 #define TMPL_INDEX                  TMPL_DIR "/index.html"
 #define TMPL_INDEX2                 TMPL_DIR "/index2.html"
 #define TMPL_MEMPOOL                TMPL_DIR "/mempool.html"
@@ -347,6 +348,7 @@ namespace xmreg
             // into template_file map
 
             template_file["css_styles"]      = xmreg::read(TMPL_CSS_STYLES);
+            template_file["blockchain_js"]   = xmreg::read(TMPL_BLOCKCHAIN_JS);
             template_file["header"]          = xmreg::read(TMPL_HEADER);
             template_file["footer"]          = get_footer();
             template_file["index2"]          = get_full_page(xmreg::read(TMPL_INDEX2));
@@ -459,6 +461,10 @@ namespace xmreg
             // loop index
             int64_t i = end_height;
 
+            std::string age_class = "";
+
+            uint64_t earliest = std::numeric_limits<uint64_t>::max();
+
             // iterate over last no_of_last_blocks of blocks
             while (i >= start_height)
             {
@@ -470,6 +476,14 @@ namespace xmreg
                     cerr << "Cant get block: " << i << endl;
                     --i;
                     continue;
+                }
+
+                bool forged = false;
+                if (blk.timestamp < earliest) {
+                    earliest = blk.timestamp;
+                }
+                else {
+                    forged = true;
                 }
 
                 // get block's hash
@@ -585,6 +599,16 @@ namespace xmreg
                             txd_map["age"] = age.first;
                         }
 
+                        if (forged) {
+                            auto &age_class = boost::get<std::string>(txd_map["age_class"]);
+                            if (age_class.find("out-of-order") == std::string::npos) {
+                                age_class += " out-of-order";
+                                auto &age_title = boost::get<std::string>(txd_map["age_title"]);
+                                if (!age_title.empty()) age_title += "&#xa;";
+                                age_title += "This block timestamp is probably forged: a later block has an earlier timestamp";
+                            }
+                        }
+
                         txs.push_back(txd_map);
 
                     }  // for (const pair<crypto::hash, mstch::map>& txd_pair: txd_pairs)
@@ -640,10 +664,31 @@ namespace xmreg
 
                         mstch::map txd_map = txd.get_mstch_map();
 
+                        std::string age_class = "";
+                        std::string age_title = "";
+                        if (tx_i == 0) {
+                            if (age.first[0] == '-') {
+                                age_class += " negative";
+                                age_title += "This block was observed with a (forged) future timestamp";
+                            }
+
+                            block next_blk;
+                            if (forged) {
+                                age_class += " out-of-order";
+                                if (!age_title.empty()) age_title += "&#xa;";
+                                age_title += "This block timestamp is probably forged: a later block has an earlier timestamp";
+                            }
+                        }
+
+
                         //add age to the txd mstch map
                         txd_map.insert({"height"    , i});
                         txd_map.insert({"blk_hash"  , blk_hash_str});
+                        txd_map.insert({"blk_or_tx_hash", tx_i == 0 ? blk_hash_str : txd_map.at("hash")});
+                        txd_map.insert({"block_or_tx", std::string(tx_i == 0 ? "block" : "tx")});
                         txd_map.insert({"age"       , age.first});
+                        txd_map.insert({"age_class" , age_class});
+                        txd_map.insert({"age_title" , age_title});
                         txd_map.insert({"diff"      , blk_diff});
                         txd_map.insert({"is_ringct" , (tx.version > 1)});
                         txd_map.insert({"rct_type"  , tx.rct_signatures.type});
@@ -4429,6 +4474,7 @@ namespace xmreg
 
             json j_txs = json::array();
 
+            uint64_t now = server_timestamp;
             // for each transaction in the memory pool in current page
             while (i < end_height)
             {
@@ -4454,6 +4500,7 @@ namespace xmreg
                 // we add some extra data, for mempool txs, such as recieve timestamp
                 j_tx["timestamp"]     = mempool_tx->receive_time;
                 j_tx["timestamp_utc"] = mempool_tx->timestamp_str;
+                j_tx["age"] = get_age(now, mempool_tx->receive_time).first;
 
                 j_txs.push_back(j_tx);
 
@@ -6023,6 +6070,10 @@ namespace xmreg
                 return template_file["css_styles"];
             }};
         }
+
+    public:
+        string get_css() { return template_file["css_styles"]; }
+        string get_blockchain_js() { return template_file["blockchain_js"]; }
 
     };
 }

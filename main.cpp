@@ -480,6 +480,11 @@ main(int ac, const char* av[])
         return text;
     });
 
+    // We can handle these, but if there's a proxy in front of this it's strongly recommended to
+    // have it serve them directly instead:
+    CROW_ROUTE(app, "/blockchain.js")([&]() { return xmrblocks.get_blockchain_js(); });
+    CROW_ROUTE(app, "/css/style.css")([&]() { return xmrblocks.get_css(); });
+
     if (enable_json_api)
     {
         CROW_ROUTE(app, "/api/transaction/<string>")

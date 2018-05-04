@@ -1,12 +1,32 @@
 body {
     margin: 0;
     padding: 0;
-    color: white;
-    background-color: black;
+    color: green;
+    background-color: rgb(90%, 90%, 90%);
+}
+
+@media(max-width: 767px) {
+    body {
+        max-width: 100%;
+        display: flex;
+        flex-direction: column
+    }
 }
 
 h1, h2, h3, h4, h5, h6 {
     text-align: center;
+}
+
+h1 {
+    font-variant: small-caps;
+}
+
+@font-face {
+    font-family: dejavu_mono;
+    src: local('DejaVu Sans Mono'),
+        url('/fonts/DejaVuSansMono.woff2') format('woff2'),
+        url('/fonts/DejaVuSansMono.woff') format('woff'),
+        url('/fonts/DejaVuSansMono.ttf') format('truetype');
 }
 
 .center {
@@ -17,7 +37,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 tr, li, #pages, .info {
-    font-family: "Lucida Console", Monaco, monospace;
+    font-family: dejavu_mono, monospace;
     font-size  : 12px;
     height: 22px;
 }
@@ -31,24 +51,47 @@ td {
     text-align: center;
 }
 
+table.mempool { width: 80%; max-width: 137ex; margin: 0 auto; }
+table.blocks { table-layout: fixed; max-width: 137ex; margin: 0 auto; }
+table.blocks td, table.blocks th {
+    padding: 0 1ex 0 1ex;
+    margin: 0;
+}
+table.blocks .height    { width: 8ex; }
+table.blocks .age       { width: 13ex; }
+table.blocks .diff      { width: 12ex; }
+table.blocks .pool      { width: 17ex; overflow: hidden; text-overflow: ellipsis; }
+table.blocks .size      { width: 11ex; }
+table.blocks .hash      { width: 17ex; overflow: hidden; text-overflow: ellipsis; }
+table.blocks .fees      { width: 8ex; }
+table.blocks .outputs   { width: 12ex; }
+table.blocks .inputs    { width: 15ex; }
+table.blocks .mixin     { width: 11ex; }
+table.blocks .txsize    { width: 13ex; }
+
+table.blocks .age.out-of-order, table.blocks .age.negative {
+    font-weight: bold;
+    color: red;
+}
+
 a:link {
     text-decoration: none;
-    color: white;
+    color: green;
 }
 
 a:visited {
     text-decoration: none;
-    color: white;
+    color: green;
 }
 
 a:hover {
     text-decoration: underline;
-    color: white;
+    color: green;
 }
 
 a:active {
     text-decoration: none;
-    color: white;
+    color: green;
 }
 
 form {
@@ -105,7 +148,7 @@ form {
 
 [type=radio]:checked ~ label {
     background: #505050 ;
-    border-bottom: 1px solid white;
+    border-bottom: 1px solid green;
     z-index: 2;
 }
 
@@ -126,7 +169,7 @@ label#show-decoded-inputs {
     /*margin: 60px 0 10px 0;*/
     cursor: pointer;
     background-color: black;;
-    color: white;
+    color: green;
     width: 100%;
     text-align: center;
 }
@@ -139,3 +182,68 @@ div#decoded-inputs{
 input#toggle-1[type=checkbox]:checked ~ div#decoded-inputs {
     display: block;
 }
+
+
+body.show-pools {
+    margin-left: 250px;
+    transition: all 0.5s ease;
+}
+#pool-list {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0px;
+    transition: all 0.5s ease;
+    border: none;
+    z-index: 1;
+}
+body.show-pools #pool-list {
+    width: 250px;
+    box-shadow: -4px 8px 12px 5px #888888;
+    transition: all 0.5s ease;
+}
+#pool-list-control {
+    font-variant: small-caps;
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    width: 250px;
+    border: none;
+    transform: rotate(0deg);
+    transform-origin: top right;
+    font-size: 25px;
+    transition: all 0.5s ease;
+    background-color: white;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: -4px 8px 12px 5px #888888;
+}
+body.show-pools #pool-list-control {
+    left: 0px;
+    top: 0px;
+    width: 250px;
+    border: none;
+    transform: rotate(-90deg);
+    transform-origin: top right;
+    z-index: 2;
+}
+body.show-pools #pool-list-control .expand, #pool-list-control .collapse {
+    display: none;
+}
+body.show-pools #pool-list-control .collapse {
+    display: inline;
+}
+
+div#auto-update {
+    font-size: 13px;
+    text-align: center;
+}
+div#auto-update.updates-enabled .not-updating, div#auto-update.updates-disabled .updating {
+    display: none;
+}
+div#auto-update a {
+    font-weight: bold;
+}
+
+
