@@ -229,24 +229,6 @@ $(function() {
         au.find('.updating a').click(disable_updates);
         au.find('.not-updating a').click(enable_updates);
 
-        var loaded_iframe = false;
-        let collapser = $('<div id="pool-list-control"><span class="expand">⟱</span><span class="collapse">⟰</span> Graft Pools</div>');
-        collapser.click(function() {
-            let body = $('body');
-            if (!loaded_iframe) {
-                loaded_iframe = true;
-                let hostname = "pools." + window.location.hostname.replace(/^[^.]+\.(?=.*\.)/, "")
-                body.append($('<iframe id="pool-list" src="//' + hostname + '/#embedded"></iframe>'));
-            }
-            body.toggleClass('show-pools');
-            if (body.hasClass("show-pools"))
-                localStorage.setItem("show-pools", 1);
-            else
-                localStorage.removeItem("show-pools");
-        });
-        $('body').append(collapser);
-        if (localStorage.getItem("show-pools"))
-            collapser.trigger("click");
     }
 });
 
