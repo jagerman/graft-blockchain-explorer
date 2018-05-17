@@ -225,10 +225,10 @@ def add_moneroocean():
 add_ncp('imaginary', 'https://imaginary.stream/', 'Canada, Montreal', 'https://imaginary.stream/api')
 add_ncp('spacepools', 'https://graft.spacepools.org/', 'EU, Germany', 'https://graft.spacepools.org/api')
 add_ncp('CryptoKnight', 'https://cryptoknight.cc/graft/', 'EU, Germany', 'https://cryptoknight.cc/rpc/graft')
-add_nodejs('Hash Vault', 'https://graft.hashvault.pro/', '', 'https://graft.hashvault.pro/api',
+add_nodejs('Hash Vault', 'https://graft.hashvault.pro/', 'Chicago, Amsterdam, Tokyo', 'https://graft.hashvault.pro/api',
         blocks_url='https://graft.hashvault.pro/en/#!/blocks', blocks=30)
 add_ncp('Dev pool', 'http://grftpool.com/', 'EU, Germany', 'http://mining.grftpool.com:8117')
-add_ncp('graftmine.net', 'https://www.graftmine.net/', 'US, Virginia', 'https://www.graftmine.net/api')
+#add_ncp('graftmine.net', 'https://www.graftmine.net/', 'US, Virginia', 'https://www.graftmine.net/api')
 add_nodejs('graftpool.net', 'http://graftpool.net/', 'EU, France', 'http://graftpool.net/api', blocks=15)
 add_nodejs('graft.pw', 'https://www.graft.pw/', 'EU-US-Asia', 'https://api.graft.pw', blocks=15)
 add_ncp('easyhash.io', 'https://easyhash.io/graft/', '', 'https://api-grft.easyhash.io',
@@ -238,20 +238,22 @@ add_ncp('miner.rocks', 'https://graft.miner.rocks/', 'US, New Jersey', 'https://
 add_nodejs('cryptopool.space', 'https://grft.cryptopool.space/en/', 'Ru-EU-Asia-US', 'https://grft.cryptopool.space/api', blocks=15)
 add_ncp('BlockHashMining', 'https://graft.blockhashmining.com/', 'US, New York', 'https://graft.blockhashmining.com/api')
 add_nodejs('cryptocrush', 'http://graft.cryptocrush.cc/', 'US, West', 'http://mine.graft.cryptocrush.cc:8001', blocks=15)
-add_nodejs('poolshash.net', 'https://graft.poolshash.net/', 'Asia, Singapore', 'https://api.graft.hashnetwork.net', blocks=15)
+add_nodejs('hashnetwork.net', 'https://graft.hashnetwork.net/', 'Asia, Singapore', 'https://api.graft.hashnetwork.net', blocks=15)
 add_ncp('MineUnlimited', 'http://graft.mineunlimited.com/', 'Asia, Singapore', 'http://asia.graft.mineunlimited.com/api')
 add_ncp('graftpool.fr', 'http://graftpool.fr/', 'EU, France', 'http://graftpool.fr:8117')
 add_nodejs('graftpool.network', 'https://graftpool.network/', 'EU, Netherlands', 'https://graftpool.network/api', blocks=15)
 add_ncp('dark-mine.su', 'https://graft.dark-mine.su/', 'Russia; Germany', 'https://graft.dark-mine.su:15004')
 add_ncp('anypool.net', 'https://graft.anypool.net/', 'EU, France', 'https://api.graft.anypool.net')
 add_ncp('nocroom', 'http://graft.pool.nocroom.com/', 'US, Los Angeles', 'http://graft.pool.nocroom.com:8117')
-add_nodejs('graftpro.com', 'https://graftpro.com/', 'US-EU-AP-Ru', 'https://api.graftpro.com/api', blocks=15)
+add_nodejs('GraftPro.com', 'https://graftpro.com/', 'US (East), EU (Brussels), AP (Japan)', 'https://api.graftpro.com/api', blocks=15)
 add_ncp('futurepools.net', 'http://grft.futurepools.net/', 'US, East', 'http://graft-api.futurepools.net:8117')
 add_nodejs('supportcryptonight', 'https://graftpool.supportcryptonight.com/', 'EU, France', 'https://graft.supportcryptonight.com/api', blocks=15)
 add_nodejs('cryptonightminers', 'https://graft.cryptonightminers.online/', 'AP-US-EU', 'https://graft.cryptonightminers.online/api', blocks=15)
 add_nodejs('semiPOOL', 'https://grft.semipool.com/', 'EU, France', 'https://grft-api.semipool.com', blocks=15)
 add_nodejs('herominers', 'https://graft.herominers.com/', 'EU, France', 'https://graft.herominers.com/api', blocks=15)
 add_ncp('cryptoblock.uk', 'https://grft.cryptoblock.uk/', 'UK, London', 'https://grft.cryptoblock.uk/api')
+add_ncp('europools.tech', 'https://graft.europools.tech/', 'EU, France', 'https://graft.europools.tech/api')
+add_ncp('gonspool.com', 'http://graft.gonspool.com/', 'EU, France', 'http://graft.gonspool.com:8117')
 add_moneroocean()
 
 
