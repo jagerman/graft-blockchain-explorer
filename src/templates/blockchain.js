@@ -12,41 +12,35 @@ function si_prefix(num) {
 
 function findPools() {
 
-    $.getJSON('/pools.json', function (data) {
-        var to_find = {};
-        var pools = $('a.find-pool');
-        for (let a_ of pools) {
-            let a = $(a_)
-            var pieces = a.attr('id').split('-');
-            to_find[pieces[1]] = [pieces[2], a];
-        }
-
-        for (let pool of data['pools']) {
-            if ('result' in pool && !('explorer' in pool)) {
-                found = []
-                for (var height in to_find) {
-                    if (height in pool['result']['blocks'] && pool['result']['blocks'][height] == to_find[height][0]) {
-                        let a = to_find[height][1];
-                        a.attr("href", pool['blocks_url']);
-                        a.attr("target", "_blank");
-                        a.text(pool['name']);
+    to_find = []
+    for (let a_ of $('a.find-pool')) {
+        let a = $(a_)
+        var pieces = a.attr('id').split('-');
+        to_find.push(pieces[1]);
+    }
+    if (to_find) {
+        $.ajax({
+            dataType: 'json',
+            method: 'POST',
+            url: '/poolapi/find',
+            data: { 'block': to_find },
+            success: function (data) {
+                for (var blk in data) {
+                    let a = $('a#find-' + blk)
+                    if (data[blk]) {
+                        let pool = data[blk]
+                        a.attr("href", pool.blocks_url);
+                        a.text(pool.pool);
                         a.removeClass("find-pool");
-                        found.push(height);
+                    }
+                    else {
+                        a.text("Unknown");
+                        a.attr("title", "This block was either mined on an unknown pool or is very new");
                     }
                 }
-                for (let f of found) {
-                    delete to_find[f];
-                }
             }
-        }
-
-        // Any leftovers couldn't be found
-        for (var height in to_find) {
-            var a = to_find[height][1];
-            a.text("Unknown");
-            a.attr("title", "This block was either mined on an unknown pool or is too old (pool data is only collected for recent blocks)");
-        }
-    });
+        });
+    }
 }
 
 function update_data() {
@@ -97,7 +91,7 @@ function update_data() {
             row.append(td);
 
             row.append($('<td class="diff">' + b['diff'] + '</td>'));
-            row.append($('<td class="pool"><a class="find-pool" id="find-' + b['height'] + '-' + b['hash'] + '"></a></td>'));
+            row.append($('<td class="pool"><a class="find-pool" id="find-' + b['hash'] + '"></a></td>'));
             row.append($('<td class="size">' + (b['size'] / 1024.).toFixed(2) + '</td>'));
             row.append($('<td class="hash"><a href="/block/' + b['hash'] + '">' + b['hash'] + '</a></td>'));
             row.append($('<td class="fees">N/A</td>'));
@@ -135,8 +129,6 @@ function update_data() {
             block_rows = $('.blocks tr.block-row')
             if (block_rows.length > numOfLastBlocks())
                 $(block_rows[numOfLastBlocks()]).nextAll().addBack().remove()
-
-            findPools();
 
             block_sizes.sort(function(a, b) { return a - b; });
             let mid1 = block_sizes[numOfLastBlocks() >> 1]
@@ -178,6 +170,8 @@ function update_data() {
         let data = d['data'];
         if (data['txs_no'] > data['limit'])
             $('#see_all_mempool').show();
+        else
+            $('#see_all_mempool').hide();
         let next = $('table.mempool tr.tx-row').first();
         for (let tx of data['txs']) {
             if (next.children('.hash').text() == tx['tx_hash']) {
@@ -197,6 +191,7 @@ function update_data() {
         next.nextAll().addBack().remove();
     });
 
+    findPools();
 }
 
 var page_updater = null

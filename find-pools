@@ -7,15 +7,24 @@
 # generate an (updating) list of known pools (excluding the block hashes cuts down on the file size
 # significantly).
 
+# It relies on a postgresql database (connection info below) with this structure:
+#
+# (FIXME)
+
 import threading
 import time
 import sys
-import requests
-import requests.exceptions
+import requests, requests.exceptions
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.poolmanager import PoolManager
 import json.decoder
 import random
 import os
+import psycopg2, psycopg2.extras
 from collections import deque
+
+pgsql = psycopg2.connect(dbname='jgr',
+        cursor_factory=psycopg2.extras.DictCursor)
 
 results = { 'pools': [], 'updated': time.time(), 'height': 0, 'difficulty': 0 }
 
@@ -107,9 +116,15 @@ def req_get(*args, **kwargs):
     return r
 
 
+def req_post(*args, **kwargs):
+    r = requests.post(*args, timeout=3, **kwargs)
+    r.raise_for_status()
+    return r
+
+
 def fetch_ncp(p):
     result = { 'blocks': {} }
-    data = req_get(p['api']).json()
+    data = req_get(p['api_url'] + '/stats').json()
     blocks = data['pool']['blocks']
     for i in range(0, len(blocks), 2):
         blkid, height = blocks[i].split(':', 1)[0], blocks[i + 1]
@@ -120,7 +135,7 @@ def fetch_ncp(p):
     base = float(data['config']['coinUnits' if 'coinUnits' in data['config'] else 'denominationUnit'])
     if p['name'] == 'futurepools.net' and base == 100:
         base = 10000000000.
-    result['min'] = data['config'][
+    result['threshold'] = data['config'][
             'minPaymentThreshold' if 'minPaymentThreshold' in data['config'] else 'minPaymentThreshold2'] / base
     result['hashrate'] = round(data['pool']['hashrate'])
     result['blocks_found'] = data['pool']['totalBlocks']
@@ -135,18 +150,21 @@ def fetch_ncp(p):
 
 def fetch_nodejs(p):
     result = { 'blocks': {} }
-    data = req_get(p['api_blocks']).json()
+
+    api = p['api_url']
+
+    data = req_get('{}/pool/blocks?page=0&limit={}'.format(api, 15)).json()
     for i in data:
         result['blocks'][i['height']] = i['hash']
 
-    pool = req_get(p['api_stats']).json()['pool_statistics']
-    network = req_get(p['api_network']).json()
-    config = req_get(p['api_config']).json()
+    pool = req_get(api + '/pool/stats').json()['pool_statistics']
+    network = req_get(api + '/network/stats').json()
+    config = req_get(api + '/config').json()
 
     result['hashrate'] = pool['hashRate']
     result['fee'] = config['pplns_fee']
     result['payments'] = pool['totalPayments']
-    result['min'] = config['min_wallet_payout'] / 10000000000.
+    result['threshold'] = config['min_wallet_payout'] / 10000000000.
     result['blocks_found'] = pool['totalBlocksFound']
     result['miners'] = pool['miners']
     result['miners_paid'] = pool['totalMinersPaid']
@@ -160,11 +178,13 @@ def fetch_nodejs(p):
 
 def fetch_moneroocean(p):
     result = { 'blocks': {} }
-    data = req_get(p['api_blocks']).json()
+
+    api = p['api_url']
+    data = req_get(api + '/coin_altblocks/18981?page=0&limit=15').json()
     for i in data:
         result['blocks'][i['height']] = i['hash']
 
-    data = req_get(p['api_stats']).json()
+    data = req_get(api + '/stats').json()
     result['blocks_found'] = data['pool_statistics']['altBlocksFound']['18981']
     graft = data['pool_statistics']['activePort'] == 18981
     result['hashrate'] = data['pool_statistics']['hashRate'] if graft else 0
@@ -173,90 +193,26 @@ def fetch_moneroocean(p):
     return result
 
 
-known_pools = [
-    # Name, URL, URL to blocks page, API fetch function, API fetch function args (typically URL(s))
-]
+known_pools = []
 
-def add_ncp(name, url, location, api, blocks_url=None):
-    known_pools.append({
-        'fetch': fetch_ncp,
-        'name': name,
-        'location': location,
-        'url': url,
-        'blocks_url': blocks_url if blocks_url is not None else url + '#pool_blocks',
-        'api': api + '/stats',
-    })
+cur = pgsql.cursor()
+cur.execute("SELECT * FROM pools WHERE enabled")
+pool_ids = {}
+for row in cur:
+    pool_ids[row['name']] = row['id']
+    data = dict(row)
+    if row['api'] == 'ncp':
+        data['fetch'] = fetch_ncp
+    elif row['api'] == 'nodejs':
+        data['fetch'] = fetch_nodejs
+    elif row['api'] == 'moneroocean':
+        data['fetch'] = fetch_moneroocean
+    else:
+        raise RuntimeError("Unkown pool API: {}".format(row['api']))
 
-def add_nodejs(name, url, location, api, blocks_url=None, blocks=25):
-    api_blocks = '{}/pool/blocks?page=0&limit={}'.format(api, blocks)
-    api_stats = api + '/pool/stats'
-    api_network = api + '/network/stats'
-    api_config = api + '/config'
-    if blocks_url is None:
-        blocks_url = url + '#/blocks'
+    known_pools.append(data)
 
-    known_pools.append({
-        'fetch': fetch_nodejs,
-        'name': name,
-        'location': location,
-        'url': url,
-        'blocks_url': blocks_url if blocks_url is not None else url + '#/blocks',
-        'api_blocks': api_blocks,
-        'api_stats': api_stats,
-        'api_network': api_network,
-        'api_config': api_config,
-    })
-
-
-def add_moneroocean():
-    known_pools.append({
-        'fetch': fetch_moneroocean,
-        'name': 'MoneroOcean',
-        'location': '(not a dedicated graft pool)',
-        'url': 'https://moneroocean.stream/',
-        'blocks_url': 'https://moneroocean.stream/#/blocks',
-        'api_blocks': 'https://api.moneroocean.stream/pool/coin_altblocks/18981?page=0&limit=50',
-        'api_stats': 'https://api.moneroocean.stream/pool/stats',
-    })
-
-
-
-
-add_ncp('imaginary', 'https://imaginary.stream/', 'Canada, Montreal', 'https://imaginary.stream/api')
-add_ncp('spacepools', 'https://graft.spacepools.org/', 'EU, Germany', 'https://graft.spacepools.org/api')
-add_ncp('CryptoKnight', 'https://cryptoknight.cc/graft/', 'EU, Germany', 'https://cryptoknight.cc/rpc/graft')
-add_nodejs('Hash Vault', 'https://graft.hashvault.pro/', 'Chicago, Amsterdam, Tokyo', 'https://graft.hashvault.pro/api',
-        blocks_url='https://graft.hashvault.pro/en/#!/blocks', blocks=30)
-add_ncp('Dev pool', 'http://grftpool.com/', 'EU, Germany', 'http://mining.grftpool.com:8117')
-#add_ncp('graftmine.net', 'https://www.graftmine.net/', 'US, Virginia', 'https://www.graftmine.net/api')
-add_nodejs('graftpool.net', 'http://graftpool.net/', 'EU, France', 'http://graftpool.net/api', blocks=15)
-add_nodejs('graft.pw', 'https://www.graft.pw/', 'EU-US-Asia', 'https://api.graft.pw', blocks=15)
-add_ncp('easyhash.io', 'https://easyhash.io/graft/', '', 'https://api-grft.easyhash.io',
-        blocks_url='https://easyhash.io/graft/blocks'),
-add_ncp('thorshammer', 'http://graft.thorshammer.cc/', 'Australia', 'http://graft.thorshammer.cc:8117')
-add_ncp('miner.rocks', 'https://graft.miner.rocks/', 'US, New Jersey', 'https://graft.miner.rocks/api')
-add_nodejs('cryptopool.space', 'https://grft.cryptopool.space/en/', 'Ru-EU-Asia-US', 'https://grft.cryptopool.space/api', blocks=15)
-add_ncp('BlockHashMining', 'https://graft.blockhashmining.com/', 'US, New York', 'https://graft.blockhashmining.com/api')
-add_nodejs('cryptocrush', 'http://graft.cryptocrush.cc/', 'US, West', 'http://mine.graft.cryptocrush.cc:8001', blocks=15)
-add_nodejs('hashnetwork.net', 'https://graft.hashnetwork.net/', 'Asia, Singapore', 'https://api.graft.hashnetwork.net', blocks=15)
-add_ncp('MineUnlimited', 'http://graft.mineunlimited.com/', 'Asia, Singapore', 'http://asia.graft.mineunlimited.com/api')
-add_ncp('graftpool.fr', 'http://graftpool.fr/', 'EU, France', 'http://graftpool.fr:8117')
-add_nodejs('graftpool.network', 'https://graftpool.network/', 'EU, Netherlands', 'https://graftpool.network/api', blocks=15)
-add_ncp('dark-mine.su', 'https://graft.dark-mine.su/', 'Russia; Germany', 'https://graft.dark-mine.su:15004')
-add_ncp('anypool.net', 'https://graft.anypool.net/', 'EU, France', 'https://api.graft.anypool.net')
-add_ncp('nocroom', 'http://graft.pool.nocroom.com/', 'US, Los Angeles', 'http://graft.pool.nocroom.com:8117')
-add_nodejs('GraftPro.com', 'https://graftpro.com/', 'US (East), EU (Brussels), AP (Japan)', 'https://api.graftpro.com/api', blocks=15)
-add_ncp('futurepools.net', 'http://grft.futurepools.net/', 'US, East', 'http://graft-api.futurepools.net:8117')
-add_nodejs('supportcryptonight', 'https://graftpool.supportcryptonight.com/', 'EU, France', 'https://graft.supportcryptonight.com/api', blocks=15)
-add_nodejs('cryptonightminers', 'https://graft.cryptonightminers.online/', 'AP-US-EU', 'https://graft.cryptonightminers.online/api', blocks=15)
-add_nodejs('semiPOOL', 'https://grft.semipool.com/', 'EU, France', 'https://grft-api.semipool.com', blocks=15)
-add_nodejs('herominers', 'https://graft.herominers.com/', 'EU, France', 'https://graft.herominers.com/api', blocks=15)
-add_ncp('cryptoblock.uk', 'https://grft.cryptoblock.uk/', 'UK, London', 'https://grft.cryptoblock.uk/api')
-add_ncp('europools.tech', 'https://graft.europools.tech/', 'EU, France', 'https://graft.europools.tech/api')
-add_ncp('gonspool.com', 'http://graft.gonspool.com/', 'EU, France', 'http://graft.gonspool.com:8117')
-add_moneroocean()
-
-
+node_info = req_post('http://127.0.0.1:18981/json_rpc', json={ "jsonrpc": "2.0", "id": "0", "method": "get_info" }).json()['result']
 
 threads = FetchThreads()
 
@@ -268,81 +224,36 @@ for p in known_pools:
             fields[x] = p[x]
     threads.enqueue(p['name'], p['fetch'], fields, p)
 
-
-def fetch_netinfo(p):
-    return req_get(p['url'] + '/api/networkinfo').json()['data']
-
-threads.enqueue('_graft.observer', fetch_netinfo, { 'explorer': True }, { 'url': 'https://graft.observer' });
-threads.enqueue('_blockexplorer.graft.network', fetch_netinfo, { 'explorer': True }, { 'url': 'https://blockexplorer.graft.network' });
-
 threads.finish()
 
-heights, popular_height, popular_height_count, height_diff = {}, {}, 0, {}
-expl_height, expl_diff = 0, 0
+cur.execute("DELETE FROM pool_fetches WHERE time < NOW() + '7 days 1 hour ago'")
+cur.execute("INSERT INTO pool_fetches (height, difficulty) VALUES (%s, %s) RETURNING id",
+    (node_info['height'], node_info['difficulty']))
+fetch_id = cur.fetchone()[0]
+
 for p in results['pools']:
+    poolid = pool_ids[p['name']]
     if 'result' in p:
-        result = p['result']
-        if 'explorer' in p:
-            if result['height'] > expl_height:
-                expl_height = result['height'];
-                expl_diff = result['difficulty'];
-        elif 'height' in result:
-            height = result['height']
-            if height not in heights:
-                heights[height] = 1
-            else:
-                heights[height] += 1
-            if heights[height] > popular_height_count:
-                popular_height = height
-                popular_height_count = heights[height]
-            height_diff[height] = result['difficulty']
-
-
-# Look for out-of-sync pools; this can happen in two ways: a pool could have desynched (or not
-# forked) and stalled, with height too low, or it could have desynched and run away, with height too
-# high.  On the other hand, it's normal to see pools 1-2 blocks out of sync (i.e. the API scraping
-# could occur around the same time a block is discovered).
-#
-# So: look for the most common height and then allow anything up to +2; the highest one we find is
-# what we use for current network diff/hashrate and is what we use the the '% net' calculation.
-# Anything above that highest accepted height, or anything more than 2 under it, gets flagged as a
-# problem.
-
-results['hashrate_synched'] = 0
-results['hashrate_unsynched'] = 0
-for p in results['pools']:
-    if 'result' in p and 'height' in p['result']:
-        result = p['result']
-        h = result['height']
-        if results['height'] < h <= popular_height + 3:
-            results['height'] = h
-            results['difficulty'] = result['difficulty']
-
-# The block explorers report the diff of the current block, while pools report the diff of the last
-# block found, so as long as it isn't behind the explorer is a better source of data:
-print("{} >=? {}".format(expl_height, results['height']))
-if expl_height >= results['height']:
-    results['height'] = expl_height
-    results['difficulty'] = expl_diff
-
-results['diff_target_hashrate'] = results['difficulty'] / 120.0
-
-for p in results['pools']:
-    if 'result' in p and 'explorer' not in p:
-        if 'height' in p['result'] and not 0 <= results['height'] - p['result']['height'] <= 3:
-            p['desync'] = True
-            results['hashrate_unsynched'] += p['result']['hashrate']
+        r = p['result']
+        if 'error' in r:
+            cur.execute('INSERT INTO pool_stats (pool_fetch, pool, error) VALUES (%s, %s, %s)', (fetch_id, poolid, r['error']))
         else:
-            results['hashrate_synched'] += p['result']['hashrate']
+            for x in ('height', 'blocks_found', 'hashrate', 'effort', 'miners', 'miners_paid', 'payments', 'fee', 'threshold'):
+                if x not in r:
+                    r[x] = None
+            cur.execute('INSERT INTO pool_stats (pool_fetch, pool, height, blocks_found, hashrate, effort, miners, miners_paid, payments, fee, threshold) ' +
+                           'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                           (fetch_id, poolid, r['height'], r['blocks_found'], r['hashrate'], r['effort'], r['miners'], r['miners_paid'], r['payments'], r['fee'], r['threshold'])
+            )
 
+            for height, blkid in r['blocks'].items():
+                cur.execute('INSERT INTO pool_blocks (pool, height, hash) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING',
+                        (poolid, height, blkid))
+    elif 'error' in p:
+        cur.execute('INSERT INTO pool_stats (pool_fetch, pool, error) VALUES (%s, %s, %s)', (fetch_id, poolid, p['error']))
+del cur
+pgsql.commit()
 
-with open('pools.json.tmp', 'w') as out:
-    out.write(json.dumps(results))
-os.replace('pools.json.tmp', 'pools.json')
-
-for p in results['pools']:
-    if 'result' in p and 'blocks' in p['result']:
-        del p['result']['blocks']
-with open('pools-noblocks.json.tmp', 'w') as out:
-    out.write(json.dumps(results))
-os.replace('pools-noblocks.json.tmp', 'pools-noblocks.json')
+pgsql.cursor().execute('REFRESH MATERIALIZED VIEW pool_agg_stats')
+pgsql.cursor().execute('REFRESH MATERIALIZED VIEW pool_hashrate_chart')
+pgsql.commit()
