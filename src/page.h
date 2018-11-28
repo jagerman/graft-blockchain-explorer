@@ -1782,7 +1782,7 @@ namespace xmreg
                 bool mine_output = (outp.first.key == tx_pubkey);
 
                 // if mine output has RingCT, i.e., tx version is 2
-                if (mine_output && tx.version == 2)
+                if (mine_output && tx.version >= 2)
                 {
                     // cointbase txs have amounts in plain sight.
                     // so use amount from ringct, only for non-coinbase txs
