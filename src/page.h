@@ -171,7 +171,7 @@ namespace xmreg
                 fee_short_str = fmt::format("{:0.3f}", xmr_amount);
             }
 
-            const double& tx_size =  static_cast<double>(size)/1024.0;
+            const double& tx_size =  static_cast<double>(size)/1000.0;
 
             mstch::map txd_map {
                     {"hash"              , pod_to_hex(hash)},
@@ -502,7 +502,7 @@ namespace xmreg
                 crypto::hash blk_hash = core_storage->get_block_id_by_height(i);
 
                 // get block size in kB
-                double blk_size = static_cast<double>(core_storage->get_db().get_block_size(i))/1024.0;
+                double blk_size = static_cast<double>(core_storage->get_db().get_block_size(i))/1000.0;
 
                 string blk_size_str = fmt::format("{:0.2f}", blk_size);
 
@@ -796,7 +796,7 @@ namespace xmreg
 
             string block_size_limit = fmt::format("{:0.2f}",
                               static_cast<double>(
-                                      current_network_info.block_size_limit) / 2.0 / 1024.0);
+                                      current_network_info.block_size_limit) / 2.0 / 1000.0);
 
             context["network_info"] = mstch::map {
                     {"difficulty"        , current_network_info.difficulty},
@@ -959,7 +959,7 @@ namespace xmreg
 
             context.insert({"mempool_size_kB",
                             fmt::format("{:0.2f}",
-                                        static_cast<double>(mempool_size_bytes)/1024.0)});
+                                        static_cast<double>(mempool_size_bytes)/1000.0)});
 
             if (add_header_and_footer)
             {
@@ -1159,7 +1159,7 @@ namespace xmreg
                     {"major_ver"            , std::to_string(blk.major_version)},
                     {"minor_ver"            , std::to_string(blk.minor_version)},
                     {"blk_size"             , fmt::format("{:0.4f}",
-                                                          static_cast<double>(blk_size) / 1024.0)},
+                                                          static_cast<double>(blk_size) / 1000.0)},
             };
             context.emplace("coinbase_txs", mstch::array{{txd_coinbase.get_mstch_map(testnet)}});
             context.emplace("blk_txs"     , mstch::array());
@@ -1701,9 +1701,9 @@ namespace xmreg
                     {"viewkey"              , viewkey_str_partial},
                     {"tx_pub_key"           , pod_to_hex(txd.pk)},
                     {"blk_height"           , tx_blk_height_str},
-                    {"tx_size"              , fmt::format("{:0.4f}",
-                                                          static_cast<double>(txd.size) / 1024.0)},
-                    {"tx_fee"               , xmreg::xmr_amount_to_str(txd.fee, "{:0.12f}", true)},
+                    {"tx_size"              , fmt::format("{:0.3f}",
+                                                          static_cast<double>(txd.size) / 1000.0)},
+                    {"tx_fee"               , xmreg::xmr_amount_to_str(txd.fee, "{:0.10f}", true)},
                     {"blk_timestamp"        , blk_timestamp},
                     {"delta_time"           , age.first},
                     {"outputs_no"           , static_cast<uint64_t>(txd.output_pub_keys.size())},
@@ -2170,7 +2170,7 @@ namespace xmreg
             context["show_inputs"]   = show_key_images;
             context["inputs_no"]     = static_cast<uint64_t>(inputs.size());
             context["sum_mixin_xmr"] = xmreg::xmr_amount_to_str(
-                    sum_mixin_xmr, "{:0.12f}", false);
+                    sum_mixin_xmr, "{:0.10f}", false);
 
 
             uint64_t possible_spending  {0};
@@ -2186,7 +2186,7 @@ namespace xmreg
             }
 
             context["possible_spending"] = xmreg::xmr_amount_to_str(
-                    possible_spending, "{:0.12f}", false);
+                    possible_spending, "{:0.10f}", false);
 
             add_css_style(context);
 
@@ -5421,8 +5421,8 @@ namespace xmreg
                     {"blk_height"            , tx_blk_height_str},
                     {"tx_blk_height"         , tx_blk_height},
                     {"tx_size"               , fmt::format("{:0.4f}",
-                                                           static_cast<double>(txd.size) / 1024.0)},
-                    {"tx_fee"                , xmreg::xmr_amount_to_str(txd.fee, "{:0.12f}", false)},
+                                                           static_cast<double>(txd.size) / 1000.0)},
+                    {"tx_fee"                , xmreg::xmr_amount_to_str(txd.fee, "{:0.10f}", false)},
                     {"tx_version"            , static_cast<uint64_t>(txd.version)},
                     {"blk_timestamp"         , blk_timestamp},
                     {"blk_timestamp_uint"    , blk.timestamp},

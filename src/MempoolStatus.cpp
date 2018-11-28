@@ -180,7 +180,7 @@ MempoolStatus::read_mempool()
             last_tx.timestamp_str   = xmreg::timestamp_to_str_gm(_tx_info.receive_time);
 
             last_tx.txsize          = fmt::format("{:0.2f}",
-                                          static_cast<double>(_tx_info.blob_size)/1024.0);
+                                          static_cast<double>(_tx_info.blob_size)/1000.0);
 
         } // if (hex_to_pod(_tx_info.id_hash, mem_tx_hash))
 

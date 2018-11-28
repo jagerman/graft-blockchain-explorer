@@ -92,7 +92,7 @@ function update_data() {
 
             row.append($('<td class="diff">' + b['diff'] + '</td>'));
             row.append($('<td class="pool"><a class="find-pool" id="find-' + b['hash'] + '"></a></td>'));
-            row.append($('<td class="size">' + (b['size'] / 1024.).toFixed(2) + '</td>'));
+            row.append($('<td class="size">' + (b['size'] / 1000.).toFixed(2) + '</td>'));
             row.append($('<td class="hash"><a href="/block/' + b['hash'] + '">' + b['hash'] + '</a></td>'));
             row.append($('<td class="fees">N/A</td>'));
             let outputs = 0;
@@ -102,7 +102,7 @@ function update_data() {
             row.append($('<td class="outputs">' + (outputs * 1e-10).toFixed(3) + '</td>'));
             row.append($('<td class="inputs">0(0)/1</td>'));
             row.append($('<td class="mixin">N/A</td>'));
-            row.append($('<td class="txsize">' + (b['txs'][0]['tx_size'] / 1024.).toFixed(2) + '</td>'));
+            row.append($('<td class="txsize">' + (b['txs'][0]['tx_size'] / 1000.).toFixed(2) + '</td>'));
 
             row.insertAfter(after);
             after = row;
@@ -117,7 +117,7 @@ function update_data() {
                 row.append($('<td class="outputs">?</td>'));
                 row.append($('<td class="inputs" title="A page refresh is required to see these values">?(?)/?</td>'));
                 row.append($('<td class="mixin">' + tx['mixin'] + '</td>'));
-                row.append($('<td class="txsize">' + (tx['tx_size'] / 1024.).toFixed(2) + '</td>'));
+                row.append($('<td class="txsize">' + (tx['tx_size'] / 1000.).toFixed(2) + '</td>'));
                 row.insertAfter(after);
                 after = row;
             }
@@ -135,7 +135,7 @@ function update_data() {
             let median = (numOfLastBlocks() % 2 == 0
                 ? 0.5 * (mid1 + block_sizes[(numOfLastBlocks() >> 1) - 1])
                 : mid1);
-            $('#blk-size-median').text((median / 1024.).toFixed(2));
+            $('#blk-size-median').text((median / 1000.).toFixed(2));
 
         }
     });
@@ -149,7 +149,7 @@ function update_data() {
         $('#network-info-fee-kb').text(data['fee_per_kb'] * 1e-10);
         $('#network-info-block-limit').text((data['block_size_limit'] / 2048.).toFixed(2));
         $('#mempool-size').text(data['tx_pool_size']);
-        $('#mempool-size-kb').text((data['tx_pool_size_kbytes'] / 1024.).toFixed(2));
+        $('#mempool-size-kb').text((data['tx_pool_size_kbytes'] / 1000.).toFixed(2));
         let nio = $('#network-info-old');
         if (nio.length > 0) nio.remove();
     });
@@ -185,7 +185,7 @@ function update_data() {
             row.append($('<td class="fee">' + (tx['tx_fee'] * 1e-10).toFixed(3) + '</td>'));
             row.append($('<td class="inout" title="A page refresh is required to see these values">?(?)/?</td>'));
             row.append($('<td class="mixin">' + tx['mixin'] + '</td>'));
-            row.append($('<td class="size">' + (tx['tx_size'] / 1024.).toFixed(2) + '</td>'));
+            row.append($('<td class="size">' + (tx['tx_size'] / 1000.).toFixed(2) + '</td>'));
             row.insertBefore(next);
         }
         next.nextAll().addBack().remove();
