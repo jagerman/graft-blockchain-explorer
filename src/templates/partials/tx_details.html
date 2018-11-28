@@ -54,6 +54,15 @@
 
     </table>
 
+    {{#is_rta}}
+    <h3>RTA transaction: Signed by {{no_rta_signatures}} RTA supernodes</h3>
+    <div class="center">
+        {{#rta_signatures}}
+        <div class="info" style="text-align: center">{{.}}</div>
+        {{/rta_signatures}}
+    </div>
+    {{/is_rta}}
+
 
   <h3>{{outputs_no}} output(s) for total of {{outputs_xmr_sum}} grf</h3>
   <div class="center">

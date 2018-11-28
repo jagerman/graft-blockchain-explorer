@@ -1433,7 +1433,18 @@ namespace xmreg
         } // j.find("rctsig_prunable") != j.end()
 
 
-
+        if (j.find("type") != j.end()) {
+            tx.type = j["type"];
+        }
+        if (j.find("rta_signatures") != j.end()) {
+            for (json &rta_sig : j["rta_signatures"]) {
+                rta_signature r;
+                epee::string_tools::hex_to_pod(rta_sig["address"]["m_spend_public_key"], r.address.m_spend_public_key);
+                epee::string_tools::hex_to_pod(rta_sig["address"]["m_view_public_key"], r.address.m_view_public_key);
+                epee::string_tools::hex_to_pod(rta_sig["signature"], r.signature);
+                tx.rta_signatures.push_back(std::move(r));
+            }
+        }
 
         //cout << "From reconstructed tx: " << obj_to_json_str(tx) << endl;
 

@@ -138,6 +138,8 @@ namespace xmreg
         uint64_t unlock_time;
         uint64_t no_confirmations;
         vector<uint8_t> extra;
+        bool is_rta;
+        vector<rta_signature> rta_signatures;
 
         crypto::hash  payment_id  = null_hash; // normal
         crypto::hash8 payment_id8 = null_hash8; // encrypted
@@ -153,7 +155,7 @@ namespace xmreg
         vector<pair<txout_to_key, uint64_t>> output_pub_keys;
 
         mstch::map
-        get_mstch_map() const
+        get_mstch_map(bool testnet) const
         {
 
             string mixin_str {"N/A"};
@@ -192,12 +194,14 @@ namespace xmreg
                     {"payment_id"        , pod_to_hex(payment_id)},
                     {"confirmations"     , no_confirmations},
                     {"extra"             , get_extra_str()},
+                    {"is_rta"            , is_rta},
+                    {"rta_signatures"    , get_rta_signatures_array(testnet)},
+                    {"no_rta_signatures" , rta_signatures.size()},
                     {"payment_id8"       , pod_to_hex(payment_id8)},
                     {"unlock_time"       , unlock_time},
                     {"tx_size"           , fmt::format("{:0.4f}", tx_size)},
                     {"tx_size_short"     , fmt::format("{:0.2f}", tx_size)}
             };
-
 
             return txd_map;
         }
@@ -210,6 +214,14 @@ namespace xmreg
                     string{reinterpret_cast<const char*>(extra.data()), extra.size()});
         }
 
+
+        mstch::array get_rta_signatures_array(bool testnet) const {
+            mstch::array rta_sigs;
+            for (auto &s : rta_signatures) {
+                rta_sigs.push_back(REMOVE_HASH_BRAKETS(xmreg::print_address(s.address, testnet)));
+            }
+            return rta_sigs;
+        }
 
         mstch::array
         get_ring_sig_for_input(uint64_t in_i)
@@ -662,7 +674,7 @@ namespace xmreg
 
                         const tx_details& txd = get_tx_details(tx, false, i, height);
 
-                        mstch::map txd_map = txd.get_mstch_map();
+                        mstch::map txd_map = txd.get_mstch_map(testnet);
 
                         std::string age_class = "";
                         std::string age_title = "";
@@ -1149,7 +1161,7 @@ namespace xmreg
                     {"blk_size"             , fmt::format("{:0.4f}",
                                                           static_cast<double>(blk_size) / 1024.0)},
             };
-            context.emplace("coinbase_txs", mstch::array{{txd_coinbase.get_mstch_map()}});
+            context.emplace("coinbase_txs", mstch::array{{txd_coinbase.get_mstch_map(testnet)}});
             context.emplace("blk_txs"     , mstch::array());
 
             // .push_back(txd_coinbase.get_mstch_map()
@@ -1196,7 +1208,7 @@ namespace xmreg
 
 
                 // add tx details mstch map to context
-                txs.push_back(txd.get_mstch_map());
+                txs.push_back(txd.get_mstch_map(testnet));
             }
 
 
@@ -3761,7 +3773,7 @@ namespace xmreg
 
                         tx_details txd = get_tx_details(tx);
 
-                        mstch::map txd_map = txd.get_mstch_map();
+                        mstch::map txd_map = txd.get_mstch_map(testnet);
 
 
                         // add the timestamp to tx mstch map
@@ -5242,6 +5254,11 @@ namespace xmreg
         get_tx_json(const transaction& tx, const tx_details& txd)
         {
 
+            std::vector<std::string> rta_sigs;
+            rta_sigs.reserve(txd.rta_signatures.size());
+            for (auto &rs : txd.rta_signatures)
+                rta_sigs.push_back(REMOVE_HASH_BRAKETS(xmreg::print_address(rs.address, testnet)));
+
             json j_tx {
                     {"tx_hash"     , pod_to_hex(txd.hash)},
                     {"tx_fee"      , txd.fee},
@@ -5254,6 +5271,8 @@ namespace xmreg
                     {"coinbase"    , is_coinbase(tx)},
                     {"mixin"       , txd.mixin_no},
                     {"extra"       , txd.get_extra_str()},
+                    {"is_rta"      , txd.is_rta},
+                    {"rta_signatures", rta_sigs},
                     {"payment_id"  , (txd.payment_id  != null_hash  ? pod_to_hex(txd.payment_id)  : "")},
                     {"payment_id8" , (txd.payment_id8 != null_hash8 ? pod_to_hex(txd.payment_id8) : "")},
             };
@@ -5418,6 +5437,9 @@ namespace xmreg
                     {"payment_id_as_ascii"   , std::regex_replace(txd.payment_id_as_ascii, e, " ")},
                     {"payment_id8"           , pid8_str},
                     {"extra"                 , txd.get_extra_str()},
+                    {"is_rta"                , txd.is_rta},
+                    {"rta_signatures"        , txd.get_rta_signatures_array(testnet)},
+                    {"no_rta_signatures"     , txd.rta_signatures.size()},
                     {"with_ring_signatures"  , static_cast<bool>(
                                                        with_ring_signatures)},
                     {"tx_json"               , tx_json},
@@ -5851,6 +5873,9 @@ namespace xmreg
             txd.size = get_object_blobsize(tx);
 
             txd.extra = tx.extra;
+
+            txd.is_rta = tx.type == transaction::tx_type_rta;
+            txd.rta_signatures = tx.rta_signatures;
 
             if (txd.payment_id != null_hash)
             {
